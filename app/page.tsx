@@ -178,7 +178,7 @@ const FeatureSection = () => {
       <audio ref={audioRef} className="hidden" />
 
       {/* Main Header */}
-      <div className="bg-black text-white px-8 py-2 text-3xl md:text-4xl tracking-wide mb-12">
+      <div className="bg-black text-white px-8 py-2 text-xl md:text-2xl tracking-wide mb-12 font-light">
         ACROSS THE AIRWAVES
       </div>
 
@@ -211,7 +211,7 @@ const FeatureSection = () => {
                   }`}
                 >
                   <div className="flex items-center gap-1 md:gap-3 min-w-0">
-                    <span className="tracking-widest text-[8px] md:text-sm font-medium truncate">
+                    <span className="tracking-widest text-[6px] md:text-[10px] font-light truncate">
                       {station.title}
                     </span>
                   </div>
@@ -260,42 +260,34 @@ const FeatureSection = () => {
                   ></div>
                   {/* Playing indicator overlay */}
                   {isStationPlaying && (
-                    <div className="absolute top-1 right-1 md:top-2 md:right-2 bg-[#FF4400] text-white px-1 py-0.5 md:px-2 md:py-1 text-[6px] md:text-[10px] font-bold tracking-wider uppercase">
+                    <div className="absolute top-1 right-1 md:top-2 md:right-2 bg-[#FF4400] text-white px-1 py-0.5 md:px-2 md:py-1 text-[5px] md:text-[8px] font-light tracking-wider uppercase">
                       LIVE
                     </div>
                   )}
-                  {!station.image && (
-                    <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-xs">
-                      LOGO COMING SOON
-                    </div>
-                  )}
-                </div>
-
-                {/* Recognition Button */}
-                {isStationPlaying && (
-                  <div className="p-2 md:p-3 border-t border-gray-200">
+                  {/* Recognition Button - Small ? in bottom right */}
+                  {isStationPlaying && (
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         fetchRecognition(station.id);
                       }}
                       disabled={loadingRecognition[station.id]}
-                      className="w-full bg-black hover:bg-gray-800 text-white px-3 py-2 md:px-4 md:py-2 text-[10px] md:text-xs font-medium tracking-wide uppercase transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      className="absolute bottom-1 right-1 md:bottom-2 md:right-2 w-4 h-4 md:w-5 md:h-5 rounded-full bg-black/60 hover:bg-black/80 text-white text-[10px] md:text-xs font-light flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed backdrop-blur-sm"
+                      title="What's playing?"
                     >
                       {loadingRecognition[station.id] ? (
-                        <>
-                          <Loader2 className="w-3 h-3 md:w-4 md:h-4 animate-spin" />
-                          <span>RECOGNIZING...</span>
-                        </>
+                        <Loader2 className="w-2.5 h-2.5 md:w-3 md:h-3 animate-spin" />
                       ) : (
-                        <>
-                          <Music className="w-3 h-3 md:w-4 md:h-4" />
-                          <span>WHAT&apos;S PLAYING?</span>
-                        </>
+                        <span>?</span>
                       )}
                     </button>
-                  </div>
-                )}
+                  )}
+                  {!station.image && (
+                    <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-[8px] md:text-[10px] font-light">
+                      LOGO COMING SOON
+                    </div>
+                  )}
+                </div>
 
                 {/* Recognition Results */}
                 {recognitionData[station.id] &&
@@ -307,17 +299,17 @@ const FeatureSection = () => {
                       <div className="p-2 md:p-3 border-t border-gray-200 bg-gray-50">
                         {recognition.status === "success" && result ? (
                           <div className="space-y-1 md:space-y-2">
-                            <div className="text-[10px] md:text-xs font-bold text-[#FF4400] uppercase tracking-wide">
+                            <div className="text-[8px] md:text-[9px] font-light text-[#FF4400] uppercase tracking-wide">
                               NOW PLAYING
                             </div>
-                            <div className="text-xs md:text-sm font-semibold text-black">
+                            <div className="text-[9px] md:text-[10px] font-light text-black">
                               {result.title}
                             </div>
-                            <div className="text-[10px] md:text-xs text-gray-600">
+                            <div className="text-[8px] md:text-[9px] text-gray-600 font-light">
                               {result.artist}
                             </div>
                             {result.album && (
-                              <div className="text-[9px] md:text-[10px] text-gray-500">
+                              <div className="text-[7px] md:text-[8px] text-gray-500 font-light">
                                 {result.album}
                               </div>
                             )}
@@ -328,7 +320,7 @@ const FeatureSection = () => {
                                     href={result.spotify.external_urls.spotify}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="text-[9px] md:text-[10px] text-[#1DB954] hover:underline"
+                                    className="text-[7px] md:text-[8px] text-[#1DB954] hover:underline font-light"
                                   >
                                     SPOTIFY
                                   </a>
@@ -338,7 +330,7 @@ const FeatureSection = () => {
                                     href={result.apple_music.url}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="text-[9px] md:text-[10px] text-blue-600 hover:underline"
+                                    className="text-[7px] md:text-[8px] text-blue-600 hover:underline font-light"
                                   >
                                     APPLE MUSIC
                                   </a>
@@ -349,7 +341,7 @@ const FeatureSection = () => {
                                   e.stopPropagation();
                                   downloadSample(station.id);
                                 }}
-                                className="text-[9px] md:text-[10px] text-gray-600 hover:text-black transition-colors flex items-center gap-1"
+                                className="text-[7px] md:text-[8px] text-gray-600 hover:text-black transition-colors flex items-center gap-1 font-light"
                                 title="Download audio sample"
                               >
                                 <Download className="w-3 h-3" />
@@ -359,7 +351,7 @@ const FeatureSection = () => {
                           </div>
                         ) : recognition.status === "success" && !result ? (
                           <div className="space-y-2">
-                            <div className="text-[10px] md:text-xs text-gray-500">
+                            <div className="text-[8px] md:text-[9px] text-gray-500 font-light">
                               No music recognized. Try again in a few seconds.
                             </div>
                             <button
@@ -376,7 +368,7 @@ const FeatureSection = () => {
                           </div>
                         ) : (
                           <div className="space-y-2">
-                            <div className="text-[10px] md:text-xs text-red-600">
+                            <div className="text-[8px] md:text-[9px] text-red-600 font-light">
                               {recognition.error?.error_message ||
                                 "Recognition failed"}
                             </div>
