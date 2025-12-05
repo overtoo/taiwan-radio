@@ -118,7 +118,7 @@ const FeatureSection = () => {
               >
                 {/* Card Header */}
                 <div
-                  className={`p-3 flex justify-between items-center transition-colors ${
+                  className={`p-1.5 md:p-3 flex justify-between items-center transition-colors ${
                     isStationPlaying
                       ? "bg-[#FF4400] text-white"
                       : isActive
@@ -126,10 +126,10 @@ const FeatureSection = () => {
                       : "bg-black text-white"
                   }`}
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1 md:gap-3 min-w-0">
                     {/* Number Circle Icon */}
                     <div
-                      className={`w-6 h-6 rounded-full border flex items-center justify-center text-xs transition-colors ${
+                      className={`w-4 h-4 md:w-6 md:h-6 rounded-full border flex items-center justify-center text-[8px] md:text-xs transition-colors flex-shrink-0 ${
                         isStationPlaying
                           ? "border-white bg-white text-[#FF4400]"
                           : "border-white"
@@ -137,22 +137,25 @@ const FeatureSection = () => {
                     >
                       {index + 1}
                     </div>
-                    <span className="tracking-widest text-sm font-medium">
+                    <span className="tracking-widest text-[8px] md:text-sm font-medium truncate">
                       {station.title}
                     </span>
                   </div>
                   <button
                     onClick={() => togglePlay(station.streamUrl, station.id)}
-                    className="hover:opacity-70 transition-opacity"
+                    className="hover:opacity-70 transition-opacity flex-shrink-0"
                   >
                     {isStationPlaying ? (
-                      <div className="flex gap-1 h-4 items-end">
-                        <span className="w-1 bg-white h-3 animate-[music-bar_1s_ease-in-out_infinite]" />
-                        <span className="w-1 bg-white h-4 animate-[music-bar_1s_ease-in-out_infinite_0.2s]" />
-                        <span className="w-1 bg-white h-3 animate-[music-bar_1s_ease-in-out_infinite_0.4s]" />
+                      <div className="flex gap-0.5 md:gap-1 h-3 md:h-4 items-end">
+                        <span className="w-0.5 md:w-1 bg-white h-2 md:h-3 animate-[music-bar_1s_ease-in-out_infinite]" />
+                        <span className="w-0.5 md:w-1 bg-white h-3 md:h-4 animate-[music-bar_1s_ease-in-out_infinite_0.2s]" />
+                        <span className="w-0.5 md:w-1 bg-white h-2 md:h-3 animate-[music-bar_1s_ease-in-out_infinite_0.4s]" />
                       </div>
                     ) : (
-                      <Play fill="white" size={16} />
+                      <Play
+                        fill="white"
+                        className="w-2.5 h-2.5 md:w-4 md:h-4"
+                      />
                     )}
                   </button>
                 </div>
@@ -183,7 +186,7 @@ const FeatureSection = () => {
                   ></div>
                   {/* Playing indicator overlay */}
                   {isStationPlaying && (
-                    <div className="absolute top-2 right-2 bg-[#FF4400] text-white px-2 py-1 text-[10px] font-bold tracking-wider uppercase">
+                    <div className="absolute top-1 right-1 md:top-2 md:right-2 bg-[#FF4400] text-white px-1 py-0.5 md:px-2 md:py-1 text-[6px] md:text-[10px] font-bold tracking-wider uppercase">
                       LIVE
                     </div>
                   )}
@@ -193,11 +196,6 @@ const FeatureSection = () => {
                     </div>
                   )}
                 </div>
-              </div>
-
-              {/* Caption Text */}
-              <div className="mt-4 text-[10px] md:text-[11px] leading-tight text-gray-800 uppercase tracking-wide">
-                {station.description}
               </div>
             </div>
           );
