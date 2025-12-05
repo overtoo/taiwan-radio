@@ -2,20 +2,25 @@
 
 import { useEffect, useRef, useState } from "react";
 import Hls from "hls.js";
-import { stations, Station } from "@/lib/data";
+import { stations } from "@/lib/data";
 
 export default function RadioApp() {
   const audioRef = useRef<HTMLAudioElement>(null);
   const hlsRef = useRef<Hls | null>(null);
-  const [nowPlaying, setNowPlaying] = useState("Select a station");
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
 
-  const play = (url: string, name: string, id: string) => {
-    setNowPlaying("Playing: " + name);
-    setActiveId(id);
-
+  const togglePlay = (url: string, name: string, id: string) => {
     const audio = audioRef.current;
     if (!audio) return;
+
+    if (activeId === id && isPlaying) {
+      audio.pause();
+      setIsPlaying(false);
+      return;
+    }
+
+    setActiveId(id);
 
     if (Hls.isSupported()) {
       if (hlsRef.current) {
@@ -34,7 +39,25 @@ export default function RadioApp() {
     }
   };
 
-  // Cleanup on unmount
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const handlePlay = () => setIsPlaying(true);
+    const handlePause = () => setIsPlaying(false);
+    const handleEnded = () => setIsPlaying(false);
+
+    audio.addEventListener("play", handlePlay);
+    audio.addEventListener("pause", handlePause);
+    audio.addEventListener("ended", handleEnded);
+
+    return () => {
+      audio.removeEventListener("play", handlePlay);
+      audio.removeEventListener("pause", handlePause);
+      audio.removeEventListener("ended", handleEnded);
+    };
+  }, []);
+
   useEffect(() => {
     return () => {
       if (hlsRef.current) {
@@ -44,67 +67,86 @@ export default function RadioApp() {
   }, []);
 
   return (
-    <div className="max-w-[600px] mx-auto p-5 font-sans">
-      <div className="sticky top-0 bg-white py-2.5 border-b border-gray-200 mb-5 z-10">
-        <div className="mb-[5px] text-[0.9em]">{nowPlaying}</div>
-        <audio ref={audioRef} controls className="w-full" />
+    <div className="h-[100dvh] w-full flex flex-col md:flex-row relative bg-white overflow-hidden">
+      {/* Centered Logo Overlay */}
+      <div className="absolute top-6 left-6 z-20 mix-blend-difference pointer-events-none">
+        <div className="text-white font-bold tracking-tighter text-xl">
+          MPBC
+        </div>
       </div>
 
-      <div id="stations-list">
-        {stations.map((st) => (
-          <div key={st.id} className="mb-[30px]">
-            <button
-              className={`
-                w-full p-[30px] text-[1.5rem] font-bold border-2 border-[#333] text-left cursor-pointer transition-colors
-                ${
-                  activeId === `main-${st.id}`
-                    ? "bg-[#333] text-white"
-                    : "bg-[#f4f4f4] hover:bg-[#e0e0e0] text-black"
-                }
-              `}
-              onClick={() => play(st.streams[0].url, st.name, `main-${st.id}`)}
-            >
-              {st.name}
-            </button>
+      {/* Hidden Audio Element */}
+      <audio ref={audioRef} className="hidden" />
 
-            <div className="border-l-2 border-r-2 border-b-2 border-[#333] p-[10px]">
-              {st.streams.map((s, idx) => {
-                const uniqueId = `variant-${st.id}-${idx}`;
-                return (
-                  <div
-                    key={idx}
-                    className={`
-                      flex justify-between p-2 cursor-pointer border-b border-[#eee] last:border-b-0
-                      ${
-                        activeId === uniqueId
-                          ? "bg-[#333] text-white"
-                          : "hover:bg-[#f9f9f9]"
-                      }
-                    `}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      play(
-                        s.url,
-                        `${st.name} (${s.role})`,
-                        uniqueId
-                      );
-                    }}
-                  >
-                    <span>{s.role}</span>
-                    <span
-                      className={`text-[0.8em] ${
-                        activeId === uniqueId ? "text-gray-300" : "text-[#888]"
-                      }`}
-                    >
-                      HLS
-                    </span>
-                  </div>
-                );
-              })}
+      {stations.map((st, index) => {
+        const isActive = activeId === st.id;
+        const isStationPlaying = isActive && isPlaying;
+        
+        return (
+          <button
+            key={st.id}
+            onClick={() => togglePlay(st.streams[0].url, st.name, st.id)}
+            className={`
+              relative flex-1 w-full h-full flex flex-col items-center justify-center
+              transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]
+              group overflow-hidden
+              ${isActive 
+                ? "flex-[1.5] bg-black text-white" 
+                : "flex-1 bg-white text-black hover:bg-gray-50"
+              }
+              ${index === 0 ? "border-b md:border-b-0 md:border-r border-gray-100" : ""}
+            `}
+          >
+            {/* Background Number for style */}
+            <div className={`
+              absolute inset-0 flex items-center justify-center overflow-hidden pointer-events-none select-none
+              transition-opacity duration-700
+              ${isActive ? "opacity-10" : "opacity-[0.03]"}
+            `}>
+              <span className="text-[40vh] leading-none font-bold tracking-tighter transform translate-y-4">
+                {st.id.includes('1296') ? '1' : '2'}
+              </span>
             </div>
-          </div>
-        ))}
-      </div>
+
+            {/* Content */}
+            <div className="relative z-10 flex flex-col items-center gap-6 transition-transform duration-500">
+              <div className="space-y-2 text-center">
+                <div className={`text-xs font-medium tracking-[0.3em] uppercase transition-colors duration-300 ${isActive ? "text-gray-400" : "text-gray-400"}`}>
+                  {st.id.includes('1296') ? 'Station One' : 'Station Two'}
+                </div>
+                <div className="text-5xl md:text-7xl font-light tracking-tight font-mono">
+                  {st.id.includes('1296') ? '1296' : '855'}
+                </div>
+                <div className={`text-sm tracking-widest uppercase opacity-60 ${isActive ? "text-gray-400" : "text-gray-500"}`}>
+                  AM Radio
+                </div>
+              </div>
+
+              {/* Play Button/Indicator */}
+              <div className={`
+                mt-8 w-16 h-16 rounded-full flex items-center justify-center border
+                transition-all duration-500
+                ${isActive 
+                  ? "border-white bg-white text-black scale-110" 
+                  : "border-black/10 text-black group-hover:border-black group-hover:scale-105"
+                }
+              `}>
+                {isStationPlaying ? (
+                  <div className="flex gap-1.5 h-5">
+                    <span className="w-1.5 bg-black animate-[music-bar_1s_ease-in-out_infinite]" />
+                    <span className="w-1.5 bg-black animate-[music-bar_1s_ease-in-out_infinite_0.2s]" />
+                    <span className="w-1.5 bg-black animate-[music-bar_1s_ease-in-out_infinite_0.4s]" />
+                  </div>
+                ) : (
+                   <svg className="w-6 h-6 translate-x-0.5" fill="currentColor" viewBox="0 0 24 24">
+                     <path d="M8 5v14l11-7z" />
+                   </svg>
+                )}
+              </div>
+            </div>
+          </button>
+        );
+      })}
     </div>
   );
 }
