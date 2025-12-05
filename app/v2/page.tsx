@@ -1,15 +1,43 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { Play } from "lucide-react";
+import { Play, Music, Loader2, Download } from "lucide-react";
 import Hls from "hls.js";
 import { stations } from "@/lib/data";
+
+interface RecognitionResult {
+  status: string;
+  result?: {
+    artist?: string;
+    title?: string;
+    album?: string;
+    release_date?: string;
+    label?: string;
+    timecode?: string;
+    song_link?: string;
+    spotify?: {
+      external_urls: { spotify: string };
+    };
+    apple_music?: {
+      url: string;
+    };
+  } | null;
+  error?: {
+    error_message?: string;
+  };
+}
 
 const FeatureSection = () => {
   const audioRef = useRef<HTMLAudioElement>(null);
   const hlsRef = useRef<Hls | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [recognitionData, setRecognitionData] = useState<
+    Record<string, RecognitionResult>
+  >({});
+  const [loadingRecognition, setLoadingRecognition] = useState<
+    Record<string, boolean>
+  >({});
 
   // Map stations to display format with logo paths
   const radioStations = stations.map((station, index) => {
@@ -87,6 +115,62 @@ const FeatureSection = () => {
       }
     };
   }, []);
+
+  const fetchRecognition = async (stationId: string) => {
+    setLoadingRecognition((prev) => ({ ...prev, [stationId]: true }));
+    try {
+      const response = await fetch("/api/recognize", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ stationId }),
+      });
+
+      const data = await response.json();
+      setRecognitionData((prev) => ({ ...prev, [stationId]: data }));
+    } catch (error) {
+      console.error("Recognition error:", error);
+      setRecognitionData((prev) => ({
+        ...prev,
+        [stationId]: {
+          status: "error",
+          error: { error_message: "Failed to fetch recognition" },
+        },
+      }));
+    } finally {
+      setLoadingRecognition((prev) => ({ ...prev, [stationId]: false }));
+    }
+  };
+
+  const downloadSample = async (stationId: string) => {
+    try {
+      const response = await fetch("/api/download-sample", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ stationId }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to download sample");
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `radio-sample-${stationId}-${Date.now()}.aac`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error("Download error:", error);
+      alert("Failed to download sample");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#F4F4F4] text-black font-mono flex flex-col items-center py-16 px-4 md:px-8">
@@ -196,6 +280,130 @@ const FeatureSection = () => {
                     </div>
                   )}
                 </div>
+
+                {/* Recognition Button */}
+                <div className="p-2 md:p-3 border-t border-gray-200">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      fetchRecognition(station.id);
+                    }}
+                    disabled={loadingRecognition[station.id]}
+                    className="w-full bg-black hover:bg-gray-800 text-white px-3 py-2 md:px-4 md:py-2 text-[10px] md:text-xs font-medium tracking-wide uppercase transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {loadingRecognition[station.id] ? (
+                      <>
+                        <Loader2 className="w-3 h-3 md:w-4 md:h-4 animate-spin" />
+                        <span>RECOGNIZING...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Music className="w-3 h-3 md:w-4 md:h-4" />
+                        <span>WHAT&apos;S PLAYING?</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {/* Recognition Results */}
+                {recognitionData[station.id] &&
+                  (() => {
+                    const recognition = recognitionData[station.id];
+                    const result = recognition.result;
+
+                    return (
+                      <div className="p-2 md:p-3 border-t border-gray-200 bg-gray-50">
+                        {recognition.status === "success" && result ? (
+                          <div className="space-y-1 md:space-y-2">
+                            <div className="text-[10px] md:text-xs font-bold text-[#FF4400] uppercase tracking-wide">
+                              NOW PLAYING
+                            </div>
+                            <div className="text-xs md:text-sm font-semibold text-black">
+                              {result.title}
+                            </div>
+                            <div className="text-[10px] md:text-xs text-gray-600">
+                              {result.artist}
+                            </div>
+                            {result.album && (
+                              <div className="text-[9px] md:text-[10px] text-gray-500">
+                                {result.album}
+                              </div>
+                            )}
+                            <div className="flex gap-2 mt-2 pt-2 border-t border-gray-200 items-center justify-between">
+                              <div className="flex gap-2">
+                                {result.spotify?.external_urls?.spotify && (
+                                  <a
+                                    href={result.spotify.external_urls.spotify}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-[9px] md:text-[10px] text-[#1DB954] hover:underline"
+                                  >
+                                    SPOTIFY
+                                  </a>
+                                )}
+                                {result.apple_music?.url && (
+                                  <a
+                                    href={result.apple_music.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-[9px] md:text-[10px] text-blue-600 hover:underline"
+                                  >
+                                    APPLE MUSIC
+                                  </a>
+                                )}
+                              </div>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  downloadSample(station.id);
+                                }}
+                                className="text-[9px] md:text-[10px] text-gray-600 hover:text-black transition-colors flex items-center gap-1"
+                                title="Download audio sample"
+                              >
+                                <Download className="w-3 h-3" />
+                                <span>DOWNLOAD</span>
+                              </button>
+                            </div>
+                          </div>
+                        ) : recognition.status === "success" && !result ? (
+                          <div className="space-y-2">
+                            <div className="text-[10px] md:text-xs text-gray-500">
+                              No music recognized. Try again in a few seconds.
+                            </div>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                downloadSample(station.id);
+                              }}
+                              className="text-[9px] md:text-[10px] text-gray-600 hover:text-black transition-colors flex items-center gap-1"
+                              title="Download audio sample"
+                            >
+                              <Download className="w-3 h-3" />
+                              <span>DOWNLOAD SAMPLE</span>
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            <div className="text-[10px] md:text-xs text-red-600">
+                              {recognition.error?.error_message ||
+                                "Recognition failed"}
+                            </div>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                downloadSample(station.id);
+                              }}
+                              className="text-[9px] md:text-[10px] text-gray-600 hover:text-black transition-colors flex items-center gap-1"
+                              title="Download audio sample"
+                            >
+                              <Download className="w-3 h-3" />
+                              <span>DOWNLOAD SAMPLE</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
               </div>
             </div>
           );
